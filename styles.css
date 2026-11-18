@@ -246,6 +246,19 @@ h2 { font-size: 2.25rem; margin-bottom: 1.5rem; font-weight: 700; }
   font-weight: 600;
   margin-bottom: 0.4rem;
 }
+.story-form label.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 500;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+.story-form label.check input {
+  width: auto;
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+}
 .story-form input,
 .story-form textarea {
   width: 100%;
