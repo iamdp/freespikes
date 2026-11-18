@@ -46,7 +46,7 @@ img { max-width: 100%; display: block; }
   font-weight: 700;
   font-size: 1.25rem;
 }
-.logo-img { height: 36px; width: auto; border-radius: 6px; object-fit: contain; }
+.logo-img { height: 40px; width: auto; object-fit: contain; }
 .nav-links {
   display: flex;
   list-style: none;
