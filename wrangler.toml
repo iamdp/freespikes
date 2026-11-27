@@ -21,5 +21,7 @@ database_id = "b342e032-150e-49f4-92c5-9b603c1403a4"
 [[send_email]]
 name = "EMAIL"
 
-# Plain-text / env vars (set values in dashboard or via wrangler secret)
-# NOTIFY_EMAIL, ADMIN_PASSWORD, DOMAIN
+# Plain-text variables
+[vars]
+NOTIFY_EMAIL = "email@davidpham.ca"
+# ADMIN_PASSWORD and DOMAIN can be added here or left as dashboard secrets
