@@ -2,24 +2,21 @@
  * Free Spikes Worker
  * - Serves static assets from public/
  * - Handles POST /api/submit (stories + contact)
- * - Handles /admin with cookie-based auth (password never in URL)
+ * - Handles /admin with signed-cookie auth + failed-login delay
  */
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // API: form submissions
     if (path === '/api/submit' && request.method === 'POST') {
       return handleSubmit(request, env);
     }
 
-    // Admin dashboard (GET shows form or dashboard; POST handles login)
     if (path === '/admin') {
       return handleAdmin(request, env);
     }
 
-    // Everything else: static assets
     return env.ASSETS.fetch(request);
   },
 };
@@ -57,7 +54,6 @@ async function handleSubmit(request, env) {
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).bind(formType, name, email, trail, content, permission, photoKey).run();
 
-    // Email notification (best-effort)
     try {
       if (env.EMAIL && env.NOTIFY_EMAIL) {
         const subject = formType === 'story' ? 'New Free Spikes story' : 'New Free Spikes contact';
@@ -89,36 +85,40 @@ async function handleSubmit(request, env) {
   }
 }
 
+// ----- Admin auth (HMAC-signed cookie + delay) -----
+const COOKIE_NAME = 'admin_auth';
+const COOKIE_MAX_AGE = 86400; // 24h
+const FAILED_DELAY_MS = 1500;
+
 async function handleAdmin(request, env) {
   const url = new URL(request.url);
   const cookies = parseCookies(request.headers.get('Cookie') || '');
-  let authenticated = cookies.admin_auth === '1';
+  const token = cookies[COOKIE_NAME];
+  const authenticated = token ? await verifyToken(token, env.ADMIN_PASSWORD) : false;
 
-  // Handle login POST
   if (request.method === 'POST') {
     const formData = await request.formData();
     const password = formData.get('password') || '';
     if (env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD) {
-      // Set cookie and redirect so password is never in the URL
+      const signed = await createToken(env.ADMIN_PASSWORD);
       return new Response(null, {
         status: 302,
         headers: {
           'Location': '/admin',
-          'Set-Cookie': 'admin_auth=1; Path=/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=86400',
+          'Set-Cookie': `${COOKIE_NAME}=${signed}; Path=/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=${COOKIE_MAX_AGE}`,
         },
       });
     } else {
-      // Wrong password — show form again with error
+      // Short delay to slow brute-force
+      await new Promise(r => setTimeout(r, FAILED_DELAY_MS));
       return loginForm(true);
     }
   }
 
-  // GET requests: check cookie
   if (!authenticated) {
     return loginForm(false);
   }
 
-  // Authenticated — show dashboard or CSV
   const { results } = await env.DB.prepare(
     `SELECT id, form_type, name, email, trail, content, permission, photo_key, created_at
      FROM submissions ORDER BY created_at DESC LIMIT 200`
@@ -165,7 +165,7 @@ async function handleAdmin(request, env) {
   <h1>Free Spikes Submissions</h1>
   <p>
     <a href="/admin?export=csv">Download CSV</a>
-    <a href="/admin/logout" class="logout" onclick="document.cookie='admin_auth=; Path=/admin; Max-Age=0'; location.reload(); return false;">Logout</a>
+    <a href="#" class="logout" onclick="document.cookie='${COOKIE_NAME}=; Path=/admin; Max-Age=0'; location.reload(); return false;">Logout</a>
   </p>
   <table>
     <thead>
@@ -179,6 +179,43 @@ async function handleAdmin(request, env) {
 </html>`;
 
   return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+}
+
+async function createToken(secret) {
+  const exp = Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE;
+  const payload = `v1.${exp}`;
+  const sig = await hmac(secret, payload);
+  return `${payload}.${sig}`;
+}
+
+async function verifyToken(token, secret) {
+  if (!secret || !token) return false;
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== 'v1') return false;
+  const exp = parseInt(parts[1], 10);
+  if (isNaN(exp) || exp < Math.floor(Date.now() / 1000)) return false;
+  const payload = `${parts[0]}.${parts[1]}`;
+  const expected = await hmac(secret, payload);
+  // Constant-time compare
+  if (expected.length !== parts[2].length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= expected.charCodeAt(i) ^ parts[2].charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+async function hmac(secret, data) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function loginForm(showError) {
@@ -202,7 +239,7 @@ function parseCookies(cookieHeader) {
   const cookies = {};
   cookieHeader.split(';').forEach(pair => {
     const [name, ...rest] = pair.trim().split('=');
-    if (name) cookies[name] = rest.join('=');
+    if (name) cookies[name] = decodeURIComponent(rest.join('='));
   });
   return cookies;
 }
