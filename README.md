@@ -1,14 +1,14 @@
 # freespikes
-Free Spikes for Safer Hikes — static website with Cloudflare Pages Functions.
+Free Spikes for Safer Hikes — static website with Cloudflare Worker.
 
-Static assets are in `public/`. Functions are in `functions/` at the root.
+Static assets are in `public/`. Worker code is in `src/index.js`.
 
 Forms post to /api/submit. Admin dashboard at /admin.
 
-Deploy command for Pages project **shy-dawn-d7a9**:
+Deploy with:
 
 ```
-npx wrangler pages deploy public --project-name=shy-dawn-d7a9
+npx wrangler deploy
 ```
 
-(Using davidpham-site build token.)
+(Configured via wrangler.toml for Worker shy-dawn-d7a9.)
