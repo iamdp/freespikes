@@ -10,3 +10,5 @@ Deploy command for Pages project **shy-dawn-d7a9**:
 ```
 npx wrangler pages deploy public --project-name=shy-dawn-d7a9
 ```
+
+(Token updated with Pages Edit permission.)
