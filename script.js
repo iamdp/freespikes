@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Form success handling via Formspree AJAX
+  // Form success handling via AJAX to /api/submit
   const forms = document.querySelectorAll('form');
   forms.forEach(form => {
     form.addEventListener('submit', async (e) => {
