@@ -1,5 +1,11 @@
 # Free Spikes — Cloudflare Pages setup notes
 
+Project name: **shy-dawn-d7a9**
+
+## Structure
+- Static assets live in `public/`
+- Pages Functions live in `functions/` at the repo root
+
 ## Required bindings (set in Cloudflare Pages project Settings > Bindings)
 
 - **DB** (D1 Database) — create database and run schema.sql
@@ -9,20 +15,29 @@
 - **ADMIN_PASSWORD** (plain text or secret) — password for /admin
 - **DOMAIN** (plain text, optional) — freespikes.com
 
-## Deploy
+## Deploy command
 
-1. Create D1 database in Cloudflare dashboard.
-2. Run the SQL in schema.sql against it (via Wrangler or dashboard).
-3. Create R2 bucket.
-4. Enable Email Sending for freespikes.com (or use Email Routing destination).
-5. Connect GitHub repo or upload the freespikes-site folder via Wrangler / Direct Upload.
-   Note: Functions require Wrangler or Git deploy (drag-and-drop does not compile functions).
-6. Add the bindings listed above.
-7. Deploy. Forms post to /api/submit. Admin at /admin?password=...
+Set the Deploy command in Pages project settings to:
+
+```
+npx wrangler pages deploy public --project-name=shy-dawn-d7a9
+```
+
+(You may also need a CLOUDFLARE_API_TOKEN secret in the Pages environment variables.)
+
+Leave the Build command empty.
+
+## Steps
+
+1. Create D1 database and run schema.sql.
+2. Create R2 bucket.
+3. Enable Email Sending / verify destination email.
+4. Set the Deploy command above and redeploy.
+5. After successful deploy, add the bindings listed above.
+6. Forms post to /api/submit. Admin at /admin?password=...
 
 ## Local testing
 
 ```bash
-npx wrangler pages dev . --d1=DB --r2=BUCKET
+npx wrangler pages dev public --d1=DB --r2=BUCKET
 ```
-(adjust as needed)
