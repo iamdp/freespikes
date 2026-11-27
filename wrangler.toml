@@ -12,9 +12,14 @@ run_worker_first = true
 binding = "BUCKET"
 bucket_name = "freespikes"
 
+# D1 database for submissions
+[[d1_databases]]
+binding = "DB"
+database_id = "b342e032-150e-49f4-92c5-9b603c1403a4"
+
 # Email service for notifications
 [[send_email]]
 name = "EMAIL"
 
 # Plain-text / env vars (set values in dashboard or via wrangler secret)
-# NOTIFY_EMAIL, ADMIN_PASSWORD, DOMAIN, and DB (D1) are configured in the dashboard.
+# NOTIFY_EMAIL, ADMIN_PASSWORD, DOMAIN
