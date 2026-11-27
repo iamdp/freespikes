@@ -58,7 +58,11 @@ img { max-width: 100%; display: block; }
   font-weight: 500;
 }
 .nav-links a:hover { color: var(--blue); }
-.nav-cta { display: none; }
+.nav-donate {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+}
+.nav-donate:hover { color: var(--blue-dark) !important; }
 
 .btn {
   display: inline-block;
@@ -339,7 +343,6 @@ h2 { font-size: 2.25rem; margin-bottom: 1.5rem; font-weight: 700; }
 
 @media (max-width: 768px) {
   .nav-links { display: none; }
-  .nav-cta { display: inline-block; }
   .grid-2, .steps, .stories-grid, .support-options, .footer-grid {
     grid-template-columns: 1fr;
   }
