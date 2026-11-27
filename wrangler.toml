@@ -21,8 +21,8 @@ database_id = "b342e032-150e-49f4-92c5-9b603c1403a4"
 [[send_email]]
 name = "EMAIL"
 
-# Plain-text variables (as shown in dashboard sync prompt)
+# Plain-text variables
 [vars]
-EMAIL = "email@davidpham.ca"
 NOTIFY_EMAIL = "email@davidpham.ca"
-# ADMIN_PASSWORD and DOMAIN can be added here or left as dashboard secrets
+# DOMAIN can be added here if desired
+# ADMIN_PASSWORD must be set as a Secret binding in the dashboard (not a plain var)
