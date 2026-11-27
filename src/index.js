@@ -2,7 +2,7 @@
  * Free Spikes Worker
  * - Serves static assets from public/
  * - Handles POST /api/submit (stories + contact)
- * - Handles GET /admin (password-protected dashboard + CSV)
+ * - Handles /admin with cookie-based auth (password never in URL)
  */
 export default {
   async fetch(request, env) {
@@ -14,8 +14,8 @@ export default {
       return handleSubmit(request, env);
     }
 
-    // Admin dashboard
-    if (path === '/admin' && request.method === 'GET') {
+    // Admin dashboard (GET shows form or dashboard; POST handles login)
+    if (path === '/admin') {
       return handleAdmin(request, env);
     }
 
@@ -91,21 +91,34 @@ async function handleSubmit(request, env) {
 
 async function handleAdmin(request, env) {
   const url = new URL(request.url);
-  const password = url.searchParams.get('password') || '';
+  const cookies = parseCookies(request.headers.get('Cookie') || '');
+  let authenticated = cookies.admin_auth === '1';
 
-  if (!env.ADMIN_PASSWORD || password !== env.ADMIN_PASSWORD) {
-    return new Response(
-      `<!DOCTYPE html><html><head><title>Admin</title></head><body>
-        <h1>Free Spikes Admin</h1>
-        <form method="GET">
-          <label>Password: <input type="password" name="password"></label>
-          <button type="submit">Login</button>
-        </form>
-      </body></html>`,
-      { headers: { 'Content-Type': 'text/html' } }
-    );
+  // Handle login POST
+  if (request.method === 'POST') {
+    const formData = await request.formData();
+    const password = formData.get('password') || '';
+    if (env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD) {
+      // Set cookie and redirect so password is never in the URL
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': '/admin',
+          'Set-Cookie': 'admin_auth=1; Path=/admin; HttpOnly; Secure; SameSite=Strict; Max-Age=86400',
+        },
+      });
+    } else {
+      // Wrong password — show form again with error
+      return loginForm(true);
+    }
   }
 
+  // GET requests: check cookie
+  if (!authenticated) {
+    return loginForm(false);
+  }
+
+  // Authenticated — show dashboard or CSV
   const { results } = await env.DB.prepare(
     `SELECT id, form_type, name, email, trail, content, permission, photo_key, created_at
      FROM submissions ORDER BY created_at DESC LIMIT 200`
@@ -145,11 +158,15 @@ async function handleAdmin(request, env) {
     th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; vertical-align: top; }
     th { background: #0a6ebd; color: white; }
     a { color: #0a6ebd; }
+    .logout { float: right; }
   </style>
 </head>
 <body>
   <h1>Free Spikes Submissions</h1>
-  <p><a href="?password=${encodeURIComponent(password)}&export=csv">Download CSV</a></p>
+  <p>
+    <a href="/admin?export=csv">Download CSV</a>
+    <a href="/admin/logout" class="logout" onclick="document.cookie='admin_auth=; Path=/admin; Max-Age=0'; location.reload(); return false;">Logout</a>
+  </p>
   <table>
     <thead>
       <tr>
@@ -162,6 +179,32 @@ async function handleAdmin(request, env) {
 </html>`;
 
   return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+}
+
+function loginForm(showError) {
+  const error = showError ? '<p style="color:#c00">Incorrect password.</p>' : '';
+  return new Response(
+    `<!DOCTYPE html><html><head><title>Admin Login</title>
+     <style>body{font-family:system-ui,sans-serif;margin:3rem auto;max-width:400px;} input{padding:0.5rem;width:100%;margin:0.5rem 0;} button{padding:0.6rem 1.2rem;background:#0a6ebd;color:white;border:none;border-radius:4px;}</style>
+     </head><body>
+      <h1>Free Spikes Admin</h1>
+      ${error}
+      <form method="POST">
+        <label>Password: <input type="password" name="password" required autofocus></label>
+        <button type="submit">Login</button>
+      </form>
+    </body></html>`,
+    { headers: { 'Content-Type': 'text/html' } }
+  );
+}
+
+function parseCookies(cookieHeader) {
+  const cookies = {};
+  cookieHeader.split(';').forEach(pair => {
+    const [name, ...rest] = pair.trim().split('=');
+    if (name) cookies[name] = rest.join('=');
+  });
+  return cookies;
 }
 
 function json(data, status = 200) {
