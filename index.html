@@ -102,7 +102,8 @@
       <p class="center sub">Did free microspikes help you finish a hike or feel safer? We’d love to hear about it.</p>
       
       <div class="story-form-wrapper">
-        <form id="story-form" class="story-form" action="https://formspree.io/f/mwloorlp" method="POST">
+        <form id="story-form" class="story-form" action="/api/submit" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="form_type" value="story">
           <div class="form-row">
             <label for="name">Name (optional)</label>
             <input type="text" id="name" name="name" placeholder="Your name">
@@ -114,6 +115,10 @@
           <div class="form-row">
             <label for="story">Your story *</label>
             <textarea id="story" name="story" rows="5" required placeholder="Tell us what happened..."></textarea>
+          </div>
+          <div class="form-row">
+            <label for="photo">Photo (optional)</label>
+            <input type="file" id="photo" name="photo" accept="image/*">
           </div>
           <div class="form-row">
             <label class="check">
@@ -202,7 +207,8 @@
       <h2 class="center">Contact</h2>
       <p class="center sub">Questions about the project or want to get in touch? Send us a message.</p>
       <div class="story-form-wrapper">
-        <form class="story-form" action="https://formspree.io/f/mdeggpgo" method="POST">
+        <form class="story-form" action="/api/submit" method="POST">
+          <input type="hidden" name="form_type" value="contact">
           <div class="form-row">
             <label for="contact-name">Name (optional)</label>
             <input type="text" id="contact-name" name="name" placeholder="Your name">
