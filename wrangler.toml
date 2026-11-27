@@ -5,6 +5,7 @@ compatibility_date = "2025-11-27"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+run_worker_first = true
 
 # Bindings are configured in the Cloudflare dashboard:
 # DB (D1), BUCKET (R2), EMAIL (Send Email), NOTIFY_EMAIL, ADMIN_PASSWORD, DOMAIN
